@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 )
 
+//MockConf represent a http call mock entity.
 type MockConf struct {
 	URL         string `json:"url"`
 	Method      string `json:"method"`
@@ -19,21 +21,54 @@ type MockConf struct {
 	Errors map[string]string
 }
 
+//MockConfs is a list of MockConf.
 type MockConfs []MockConf
 
+const confEXT = ".mc"
+const contentEXT = ".data"
+
+//WriteToDisk saves a MockConf to disk.
+func (c MockConf) WriteToDisk(content []byte, s Settings) error {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+
+	ioutil.WriteFile(s.DataDirPath+"/"+c.GetFileName()+contentEXT, content, 0644)
+	return ioutil.WriteFile(s.DataDirPath+"/"+c.GetFileName()+confEXT, b, 0644)
+
+}
+
+//GetFileName returns the filename for a MockConf enitiy.
 func (c *MockConf) GetFileName() string {
 	hasher := sha1.New()
 	hasher.Write([]byte(c.URL))
 	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
 	return filename
 }
+
+//GetRequestURL builds the request target url.
+func GetRequestURL(r *http.Request, settings Settings) (string, error) {
+	target, err := url.Parse(settings.TargetURL)
+	if err != nil {
+		return "", err
+	}
+	target.Scheme = "http"
+	return target.String() + r.RequestURI, nil
+}
+
+//Load tries to read a MockConf from disk by using the request url to determine the filename.
 func Load(r *http.Request, settings Settings) (*MockConf, error) {
-	url := r.URL.String()
+	requestURL, err := GetRequestURL(r, settings)
+	if err != nil {
+		return nil, err
+	}
+
 	hasher := sha1.New()
-	hasher.Write([]byte(url))
+	hasher.Write([]byte(requestURL))
 	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
 	dir := settings.DataDirPath
-	data, err := ioutil.ReadFile(dir + "/" + filename + ".mc")
+	data, err := ioutil.ReadFile(dir + "/" + filename + confEXT)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +78,7 @@ func Load(r *http.Request, settings Settings) (*MockConf, error) {
 
 }
 
+//LoadAll loads all MockConf entities available.
 func LoadAll(settings Settings) (*MockConfs, error) {
 	var confs MockConfs
 
@@ -59,7 +95,7 @@ func LoadAll(settings Settings) (*MockConfs, error) {
 
 	for _, file := range files {
 		if file.Mode().IsRegular() {
-			if filepath.Ext(file.Name()) == ".mc" {
+			if filepath.Ext(file.Name()) == confEXT {
 				fmt.Println("Found: " + file.Name())
 				data, err := ioutil.ReadFile(settings.DataDirPath + "/" + file.Name())
 				if err != nil {
