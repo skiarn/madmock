@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,7 +15,7 @@ import (
 
 //MockConf represent a http call mock entity.
 type MockConf struct {
-	URL         string `json:"url"`
+	URI         string `json:"uri"`
 	Method      string `json:"method"`
 	ContentType string `json:"contenttype"`
 
@@ -41,32 +42,39 @@ func (c MockConf) WriteToDisk(content []byte, s Settings) error {
 
 //GetFileName returns the filename for a MockConf enitiy.
 func (c *MockConf) GetFileName() string {
+
 	hasher := sha1.New()
-	hasher.Write([]byte(c.URL))
+	hasher.Write([]byte(c.Method + "-" + c.URI))
 	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
 	return filename
 }
 
+func GetFileName(r *http.Request) (string, error) {
+	hasher := sha1.New()
+	hasher.Write([]byte(r.Method + "-" + r.RequestURI))
+	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
+	return filename, nil
+}
+
 //GetRequestURL builds the request target url.
-func GetRequestURL(r *http.Request, settings Settings) (string, error) {
+func GetRequestURL(uri string, settings Settings) (string, error) {
 	target, err := url.Parse(settings.TargetURL)
 	if err != nil {
 		return "", err
 	}
 	target.Scheme = "http"
-	return target.String() + r.RequestURI, nil
+	log.Println("Target:", target)
+	log.Println("URI:", uri)
+	return target.String() + uri, nil
 }
 
 //Load tries to read a MockConf from disk by using the request url to determine the filename.
 func Load(r *http.Request, settings Settings) (*MockConf, error) {
-	requestURL, err := GetRequestURL(r, settings)
+
+	filename, err := GetFileName(r)
 	if err != nil {
 		return nil, err
 	}
-
-	hasher := sha1.New()
-	hasher.Write([]byte(requestURL))
-	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
 	dir := settings.DataDirPath
 	data, err := ioutil.ReadFile(dir + "/" + filename + confEXT)
 	if err != nil {

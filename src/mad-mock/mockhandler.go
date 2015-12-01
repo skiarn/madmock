@@ -16,7 +16,7 @@ type Mockhandler struct {
 }
 
 func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println("Trying to mock request: " + r.URL.String())
+	log.Println("Request: " + r.URL.String())
 	m, err := Load(r, h.settings)
 	if err != nil {
 		log.Println(err)
@@ -33,12 +33,12 @@ func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*MockConf, error) {
-	requestURL, err := GetRequestURL(r, h.settings)
+	requestURL, err := GetRequestURL(r.RequestURI, h.settings)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Println("Fetching data from : " + requestURL)
+	log.Println("Fetching: " + requestURL)
 	client := &http.Client{}
 
 	if r.Method != "GET" {
@@ -62,7 +62,7 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*Mock
 	if err != nil {
 		return nil, err
 	}
-	c := MockConf{URL: requestURL, Method: r.Method, ContentType: response.Header.Get("Content-Type")}
+	c := MockConf{URI: r.RequestURI, Method: r.Method, ContentType: response.Header.Get("Content-Type")}
 	err = c.WriteToDisk(contents, h.settings)
 	if err != nil {
 		return nil, err
@@ -91,5 +91,5 @@ func (h *Mockhandler) sendMockResponse(m *MockConf, w http.ResponseWriter, r *ht
 		http.Error(w, "Internal error while wringing response: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Copied %v bytes\n", n)
+	log.Printf("%v bytes %s\n", n, r.URL.String())
 }
