@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -63,8 +62,6 @@ func GetRequestURL(uri string, settings Settings) (string, error) {
 		return "", err
 	}
 	target.Scheme = "http"
-	log.Println("Target:", target)
-	log.Println("URI:", uri)
 	return target.String() + uri, nil
 }
 
