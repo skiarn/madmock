@@ -15,6 +15,7 @@ Configuration
 go install mad-mock
 
 ## Run application
+Application is located in $GOPATH/bin.
 * For help ```./mad-mock --help ```
 
 ```
