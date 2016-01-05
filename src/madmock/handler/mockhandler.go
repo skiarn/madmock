@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"errors"
@@ -12,12 +12,13 @@ import (
 
 //Mockhandler handles request to be mocked.
 type Mockhandler struct {
-	settings Settings
+	TargetURL   string
+	DataDirPath string
 }
 
 func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("Request: " + r.URL.String())
-	m, err := Load(r, h.settings)
+	m, err := Load(r, h.DataDirPath)
 	if err != nil {
 		log.Println(err)
 		//do real request do targetet system, to retrive information from system.
@@ -33,7 +34,7 @@ func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*MockConf, error) {
-	requestURL, err := GetRequestURL(r.RequestURI, h.settings)
+	requestURL, err := GetRequestURL(r.RequestURI, h.TargetURL)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*Mock
 		return nil, err
 	}
 	c := MockConf{URI: r.RequestURI, Method: r.Method, ContentType: response.Header.Get("Content-Type")}
-	err = c.WriteToDisk(contents, h.settings)
+	err = c.WriteToDisk(contents, h.DataDirPath)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +73,7 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*Mock
 }
 
 func (h *Mockhandler) sendMockResponse(m *MockConf, w http.ResponseWriter, r *http.Request) {
-	d, err := os.Open(h.settings.DataDirPath + "/" + m.GetFileName() + ".data")
+	d, err := os.Open(h.DataDirPath + "/" + m.GetFileName() + ".data")
 	if err != nil {
 		log.Printf("%s \n", err)
 		http.Error(w, "Resource unavailable: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusServiceUnavailable)

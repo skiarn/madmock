@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"crypto/sha1"
@@ -24,18 +24,18 @@ type MockConf struct {
 //MockConfs is a list of MockConf.
 type MockConfs []MockConf
 
-const confEXT = ".mc"
-const contentEXT = ".data"
+const ConfEXT = ".mc"
+const ContentEXT = ".data"
 
 //WriteToDisk saves a MockConf to disk.
-func (c MockConf) WriteToDisk(content []byte, s Settings) error {
+func (c MockConf) WriteToDisk(content []byte, dataDirPath string) error {
 	b, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
 
-	ioutil.WriteFile(s.DataDirPath+"/"+c.GetFileName()+contentEXT, content, 0644)
-	return ioutil.WriteFile(s.DataDirPath+"/"+c.GetFileName()+confEXT, b, 0644)
+	ioutil.WriteFile(dataDirPath+"/"+c.GetFileName()+ContentEXT, content, 0644)
+	return ioutil.WriteFile(dataDirPath+"/"+c.GetFileName()+ConfEXT, b, 0644)
 
 }
 
@@ -56,8 +56,8 @@ func GetFileName(r *http.Request) (string, error) {
 }
 
 //GetRequestURL builds the request target url.
-func GetRequestURL(uri string, settings Settings) (string, error) {
-	target, err := url.Parse(settings.TargetURL)
+func GetRequestURL(uri string, targetURL string) (string, error) {
+	target, err := url.Parse(targetURL)
 	if err != nil {
 		return "", err
 	}
@@ -66,14 +66,14 @@ func GetRequestURL(uri string, settings Settings) (string, error) {
 }
 
 //Load tries to read a MockConf from disk by using the request url to determine the filename.
-func Load(r *http.Request, settings Settings) (*MockConf, error) {
+func Load(r *http.Request, dataDirPath string) (*MockConf, error) {
 
 	filename, err := GetFileName(r)
 	if err != nil {
 		return nil, err
 	}
-	dir := settings.DataDirPath
-	data, err := ioutil.ReadFile(dir + "/" + filename + confEXT)
+	dir := dataDirPath
+	data, err := ioutil.ReadFile(dir + "/" + filename + ConfEXT)
 	if err != nil {
 		return nil, err
 	}
@@ -84,10 +84,10 @@ func Load(r *http.Request, settings Settings) (*MockConf, error) {
 }
 
 //LoadAll loads all MockConf entities available.
-func LoadAll(settings Settings) (*MockConfs, error) {
+func LoadAll(dataDirPath string) (*MockConfs, error) {
 	var confs MockConfs
 
-	d, err := os.Open(settings.DataDirPath)
+	d, err := os.Open(dataDirPath)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +100,9 @@ func LoadAll(settings Settings) (*MockConfs, error) {
 
 	for _, file := range files {
 		if file.Mode().IsRegular() {
-			if filepath.Ext(file.Name()) == confEXT {
+			if filepath.Ext(file.Name()) == ConfEXT {
 				fmt.Println("Found: " + file.Name())
-				data, err := ioutil.ReadFile(settings.DataDirPath + "/" + file.Name())
+				data, err := ioutil.ReadFile(dataDirPath + "/" + file.Name())
 				if err != nil {
 					return nil, err
 				}
