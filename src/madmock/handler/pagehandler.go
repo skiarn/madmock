@@ -72,8 +72,18 @@ const css = "<style>" + `
 											cursor: pointer;
 										}` + "</style>"
 
-const saveform = `<form method="POST" action="/mock/save/">
-		<label>URI:
+//statusCodeHTMLSelect returns html selector for http status code.
+func statusCodeHTMLSelect() string {
+	var statuscodehtml = `<select id="statuscodeS" name="StatusCode">`
+	for _, c := range ValidStatusCodes {
+		statuscodehtml += fmt.Sprintf("<option value=\"%v\">%v, %s</option>", c, c, http.StatusText(c))
+	}
+	return statuscodehtml + `</select>`
+}
+func saveformHTML() string {
+	saveform := `<form method="POST" action="/mock/save/">`
+	statuscodeSelect := statusCodeHTMLSelect()
+	r := `<label>URI:
 			<input id="uriI" style="width:80%;" type="text" name="URI" placeholder="/example/123"/>
 		</label>
 		<select id="methodS" name="Method">
@@ -89,7 +99,8 @@ const saveform = `<form method="POST" action="/mock/save/">
 		<textarea id="contentTA" type="text" name="body" placeholder="Response..."></textarea>
 	<input type="submit" value="Submit">
 </form>`
-
+	return saveform + statuscodeSelect + r
+}
 func (h *Pagehandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.servePage(w, r)
 }
@@ -129,7 +140,7 @@ func (h *Pagehandler) ViewConfHandler(w http.ResponseWriter, r *http.Request) {
 //EditHandler handles resource page to edit item.
 func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Path[len("/mock/edit/"):]
-	editform := "<div class=\"container\"> <h4>Editing</h4>" + saveform + "</div>"
+	editform := "<div class=\"container\"> <h4>Editing</h4>" + "<h5>Headers</h5><p id=\"headersP\"></p> <br>" + saveformHTML() + "</div>"
 	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div>`, title, editform)
 	script := fmt.Sprintf(`<script>
 		function getResource() {
@@ -160,6 +171,9 @@ func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 								document.getElementById('uriI').value = json.uri;
 								document.getElementById('contenttypeI').value = json.contenttype;
 								document.getElementById('methodS').value = json.method;
+								document.getElementById('statuscodeS').value = json.status;
+
+								document.getElementById('headersP').innerHTML = JSON.stringify(json.header);
 		        }
 		    }
 		    confhttp.open("GET", '/mock/view/conf/%s', true);
@@ -176,7 +190,7 @@ func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 
 //New serves a page for creating a new mock entity.
 func (h *Pagehandler) New(w http.ResponseWriter, r *http.Request) {
-	postform := "<div class=\"container\"> <h4>New</h4>" + saveform + "</div>"
+	postform := "<div class=\"container\"> <h4>New</h4>" + saveformHTML() + "</div>"
 	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div>`, title, postform)
 
 	page := "<html><head>" + css + "</head>" + "<body>" + content + "</body></html>"
@@ -190,12 +204,18 @@ func (h *Pagehandler) Save(w http.ResponseWriter, r *http.Request) {
 	method := r.FormValue("Method")
 	contentType := r.FormValue("ContentType")
 	body := r.FormValue("body")
+	statuscodeFV := r.FormValue("StatusCode")
 	if strings.TrimSpace(uri) == "" {
 		paramErrors["URI"] = "missing"
 	}
 
 	if strings.TrimSpace(contentType) == "" {
 		paramErrors["ContentType"] = "missing"
+	}
+
+	statuscode, err := ValidateStatusCode(statuscodeFV)
+	if err != nil {
+		paramErrors["StatusCode"] = err.Error()
 	}
 
 	if len(paramErrors) != 0 {
@@ -207,8 +227,8 @@ func (h *Pagehandler) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := MockConf{URI: uri, Method: method, ContentType: contentType}
-	err := c.WriteToDisk([]byte(body), h.DataDirPath)
+	c := MockConf{URI: uri, Method: method, ContentType: contentType, StatusCode: statuscode}
+	err = c.WriteToDisk([]byte(body), h.DataDirPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -251,10 +271,10 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 	for _, i := range *responseList {
 		resources = resources + fmt.Sprintf(`<div class="container" style="border: 1px solid black">
 																						<div style="float:right"> <button class="delete-btn" onclick="deleteResource(this.value)" value="%s"/></div>
-																						<div> <b>%s</b> <a href="mock/view/data/%s">View %s</a> </div>
+																						<div>%v <b>%s</b> <a href="mock/view/data/%s">View %s</a> </div>
 																						<div>%s</div>
 																						<a href="mock/edit/%s"><button type="button">Edit</button></a>
-																					</div>`, i.GetFileName(), i.Method, i.GetFileName(), i.URI, i.ContentType, i.GetFileName())
+																					</div>`, i.GetFileName(), i.StatusCode, i.Method, i.GetFileName(), i.URI, i.ContentType, i.GetFileName())
 	}
 
 	script := `<script>

@@ -4,19 +4,24 @@ import (
 	"crypto/sha1"
 	"encoding/base32"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 //MockConf represent a http call mock entity.
 type MockConf struct {
-	URI         string `json:"uri"`
-	Method      string `json:"method"`
-	ContentType string `json:"contenttype"`
+	URI         string            `json:"uri"`
+	Method      string            `json:"method"`
+	ContentType string            `json:"contenttype"`
+	StatusCode  int               `json:"status"`
+	Header      map[string]string `json:"header"`
 
 	Errors map[string]string
 }
@@ -24,8 +29,38 @@ type MockConf struct {
 //MockConfs is a list of MockConf.
 type MockConfs []MockConf
 
+//ConfEXT is fileextension for config file.
 const ConfEXT = ".mc"
+
+//ContentEXT is fileextension for data body file.
 const ContentEXT = ".data"
+
+//ValidStatusCodes is valid http status codes.
+var ValidStatusCodes = [...]int{100, 101, 200, 201, 202, 203, 204, 205, 206, 300, 301, 302, 303, 304, 305, 307, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 500, 501, 502, 503, 504, 505}
+
+//ValidateStatusCode checks if string is valid http code.
+func ValidateStatusCode(code string) (int, error) {
+	if strings.TrimSpace(code) == "" {
+		return 0, errors.New("missing")
+	}
+	statuscode, err := strconv.Atoi(code)
+	if err != nil {
+		return 0, err
+	}
+
+	isvalid := false
+	for _, c := range ValidStatusCodes {
+		if c == statuscode {
+			isvalid = true
+		}
+	}
+
+	if !isvalid {
+		return 0, fmt.Errorf("%v is unknown", statuscode)
+	}
+
+	return statuscode, nil
+}
 
 //WriteToDisk saves a MockConf to disk.
 func (c MockConf) WriteToDisk(content []byte, dataDirPath string) error {

@@ -52,8 +52,8 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*Mock
 	if err != nil {
 		return nil, err
 	}
-	//TODO: copy all request headers?.
-	request.Header.Set("Content-Type", r.Header.Get("Content-Type"))
+	copyHeader(r.Header, &request.Header)
+
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
@@ -63,13 +63,27 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*Mock
 	if err != nil {
 		return nil, err
 	}
-	c := MockConf{URI: r.RequestURI, Method: r.Method, ContentType: response.Header.Get("Content-Type")}
+	responseHeaders := make(map[string]string)
+	for k, v := range response.Header {
+		for _, vv := range v {
+			responseHeaders[k] = vv
+		}
+	}
+	c := MockConf{URI: r.RequestURI, Method: r.Method, ContentType: response.Header.Get("Content-Type"), StatusCode: response.StatusCode, Header: responseHeaders}
 	err = c.WriteToDisk(contents, h.DataDirPath)
 	if err != nil {
 		return nil, err
 	}
 
 	return &c, nil
+}
+
+func copyHeader(source http.Header, dest *http.Header) {
+	for k, v := range source {
+		for _, vv := range v {
+			dest.Add(k, vv)
+		}
+	}
 }
 
 func (h *Mockhandler) sendMockResponse(m *MockConf, w http.ResponseWriter, r *http.Request) {
@@ -87,6 +101,7 @@ func (h *Mockhandler) sendMockResponse(m *MockConf, w http.ResponseWriter, r *ht
 	}
 	w.Header().Set("Content-Length", strconv.FormatInt(dstat.Size(), 10))
 	w.Header().Set("Content-Type", m.ContentType)
+	w.WriteHeader(m.StatusCode)
 	n, err := io.Copy(w, d)
 	if err != nil {
 		http.Error(w, "Internal error while wringing response: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
