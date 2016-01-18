@@ -40,7 +40,8 @@ func (s *Settings) Init() error {
 	if err != nil {
 		return err
 	}
-	dirpath := path + "/" + *dir
+
+	dirpath := path + "/" + *dir + "/" + *url
 	s.DataDirPath = dirpath
 
 	return nil
