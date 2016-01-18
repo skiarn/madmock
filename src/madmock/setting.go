@@ -28,7 +28,7 @@ type Settings struct {
 
 func (s *Settings) Init() error {
 
-	var port = flag.Int("p", 8080, "What port the mock should run on.")
+	var port = flag.Int("p", 9988, "What port the mock should run on.")
 	var url = flag.String("u", "", "Base url to system to be mocked (request will be fetched once and stored locally).")
 	var dir = flag.String("d", "mad-mock-store", "Directory path to mock data and config files.")
 	flag.Parse() // parse the flags
