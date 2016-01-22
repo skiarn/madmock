@@ -18,6 +18,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Settings struct {
@@ -41,7 +42,8 @@ func (s *Settings) Init() error {
 		return err
 	}
 
-	dirpath := path + "/" + *dir + "/" + *url
+	// Removes : in "example:8080" since : is not valid directory character.
+	dirpath := path + "/" + *dir + "/" + strings.Replace(*url, ":", "_", -1)
 	s.DataDirPath = dirpath
 
 	return nil
