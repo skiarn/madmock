@@ -16,17 +16,41 @@ package handler_test
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"madmock/handler"
+	"madmock/model"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 )
+
+//fsMockImpl is implementation of application mocked filesystem.
+type fsMockImpl struct{}
+
+func (fsMockImpl) Remove(name string) error {
+	return errors.New("File can not be removed because this is a mock test!")
+}
+
+func (fsMockImpl) ReadMockConf(filepath string) (*model.MockConf, error) {
+	return nil, errors.New("ReadMockConf went horrible testy wrong")
+}
+func (fsMockImpl) WriteMock(c model.MockConf, content []byte, dirpath string) error {
+	return errors.New("WriteMock went horrible testy wrong")
+}
+func (fsMockImpl) ReadAllMockConf(dataDirPath string) (*model.MockConfs, error) {
+	return nil, errors.New("ReadAllMockConf went horrible testy wrong")
+}
+func (fsMockImpl) ReadResource(filepath string) (io.Reader, error) {
+	return nil, errors.New("ReadResource went horrible testy wrong")
+}
 
 func TestPagehandlerHandleGet_WhenMissingBodyID(t *testing.T) {
 	expectedBody := `{"id":"missing"}`
 	expectedReturnCode := 400
-	pagehandler := handler.Pagehandler{DataDirPath: "/test"}
+	//bytes.NewReader([]byte(expectedBody))
+
+	pagehandler := handler.Pagehandler{DataDirPath: "/test", Fs: fsMockImpl{}}
+
 	test := GenerateHandleTester(t, &pagehandler)
 	//w := test("GET", url.Values{})
 	w := test("GET", []byte(`{"id":"123456ID"}`))
@@ -56,49 +80,5 @@ func xTestPagehandlerHandleGet(t *testing.T) {
 	w := test("GET", []byte(`{"id":"123456ID"}`))
 	if w.Code != http.StatusOK {
 		t.Errorf("Home page didn't return %v, response value: %v", http.StatusOK, w)
-	}
-}
-
-type HandleTester func(
-	method string,
-	//params url.Values,
-	body []byte,
-) *httptest.ResponseRecorder
-
-// Given the current test runner and an http.Handler, generate a
-// HandleTester which will test its given input against the
-// handler.
-
-func GenerateHandleTester(
-	t *testing.T,
-	handleFunc http.Handler,
-) HandleTester {
-
-	// Given a method type ("GET", "POST", etc) and
-	// parameters, serve the response against the handler and
-	// return the ResponseRecorder.
-
-	return func(
-		method string,
-		//params url.Values,
-		body []byte,
-	) *httptest.ResponseRecorder {
-
-		req, err := http.NewRequest(
-			method,
-			"",
-			//strings.NewReader(params.Encode()),
-			strings.NewReader(string(body)),
-		)
-		if err != nil {
-			t.Errorf("%v", err)
-		}
-		req.Header.Set(
-			"Content-Type",
-			"application/x-www-form-urlencoded; param=value",
-		)
-		w := httptest.NewRecorder()
-		handleFunc.ServeHTTP(w, req)
-		return w
 	}
 }

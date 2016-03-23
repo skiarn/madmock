@@ -15,19 +15,22 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
+	"madmock/filesys"
+	"madmock/model"
 	"net/http"
-	"os"
-	"regexp"
-	"strings"
 )
 
 // Pagehandler handles index page.
 type Pagehandler struct {
 	DataDirPath string
+	Fs          filesys.FileSystem
+}
+
+//NewPageHandler handles initzialisation of PageHandler.
+func NewPageHandler(path string) Pagehandler {
+	return Pagehandler{DataDirPath: path, Fs: filesys.LocalFileSystem{}}
 }
 
 const title = "Mad Mock"
@@ -89,13 +92,13 @@ const css = "<style>" + `
 //statusCodeHTMLSelect returns html selector for http status code.
 func statusCodeHTMLSelect() string {
 	var statuscodehtml = `<select id="statuscodeS" name="StatusCode">`
-	for _, c := range ValidStatusCodes {
+	for _, c := range model.ValidStatusCodes {
 		statuscodehtml += fmt.Sprintf("<option value=\"%v\">%v, %s</option>", c, c, http.StatusText(c))
 	}
 	return statuscodehtml + `</select>`
 }
 func saveformHTML() string {
-	saveform := `<form method="POST" action="/mock/save/">`
+	saveform := `<form method="POST" action="/mock/api/mock/">`
 	statuscodeSelect := statusCodeHTMLSelect()
 	r := `<label>URI:
 			<input id="uriI" style="width:80%;" type="text" name="URI" placeholder="/example/123"/>
@@ -119,41 +122,10 @@ func (h *Pagehandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.servePage(w, r)
 }
 
-//ViewDataHandler load resource data.
-func (h *Pagehandler) ViewDataHandler(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Path[len("mock/view/data/"):]
-
-	d, err := os.Open(h.DataDirPath + "/" + name + ContentEXT)
-	if err != nil {
-		http.Error(w, "Was not able to find resource: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-	_, err = io.Copy(w, d)
-	if err != nil {
-		http.Error(w, "Internal error while wringing response: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-//ViewConfHandler loads resource configuration.
-func (h *Pagehandler) ViewConfHandler(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Path[len("mock/view/data/"):]
-
-	d, err := os.Open(h.DataDirPath + "/" + name + ConfEXT)
-	if err != nil {
-		http.Error(w, "Was not able to find resource: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-	_, err = io.Copy(w, d)
-	if err != nil {
-		http.Error(w, "Internal error while wringing response: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
 //EditHandler handles resource page to edit item.
 func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Path[len("/mock/edit/"):]
+	log.Println("Trying to edit resource: ", name)
 	editform := "<div class=\"container\"> <h4>Editing</h4>" + "<h5>Headers</h5><p id=\"headersP\"></p> <br>" + saveformHTML() + "</div>"
 	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div>`, title, editform)
 	script := fmt.Sprintf(`<script>
@@ -168,7 +140,7 @@ func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 								document.getElementById('contentTA').value = datahttp.response;
 		        }
 		    }
-		    datahttp.open("GET", '/mock/view/data/%s', true);
+		    datahttp.open("GET", '/mock/api/mock/data/%s', true);
 		    datahttp.send();
 
 				//ajaxcall get resource configuration.
@@ -190,7 +162,7 @@ func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 								document.getElementById('headersP').innerHTML = JSON.stringify(json.header);
 		        }
 		    }
-		    confhttp.open("GET", '/mock/view/conf/%s', true);
+		    confhttp.open("GET", '/mock/api/mock/%s', true);
 		    confhttp.send();
 
 
@@ -211,72 +183,10 @@ func (h *Pagehandler) New(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", page)
 }
 
-//Save a new mock entity on serverside. Will create new resource if not existing and if it already exist it will update the resource.
-func (h *Pagehandler) Save(w http.ResponseWriter, r *http.Request) {
-	paramErrors := make(map[string]string)
-	uri := r.FormValue("URI")
-	method := r.FormValue("Method")
-	contentType := r.FormValue("ContentType")
-	body := r.FormValue("body")
-	statuscodeFV := r.FormValue("StatusCode")
-	if strings.TrimSpace(uri) == "" {
-		paramErrors["URI"] = "missing"
-	}
-
-	if strings.TrimSpace(contentType) == "" {
-		paramErrors["ContentType"] = "missing"
-	}
-
-	statuscode, err := ValidateStatusCode(statuscodeFV)
-	if err != nil {
-		paramErrors["StatusCode"] = err.Error()
-	}
-
-	if len(paramErrors) != 0 {
-		validationErrors, err := json.Marshal(paramErrors)
-		if err != nil {
-			log.Println(err)
-		}
-		http.Error(w, string(validationErrors), 400)
-		return
-	}
-
-	c := MockConf{URI: uri, Method: method, ContentType: contentType, StatusCode: statuscode}
-	err = c.WriteToDisk([]byte(body), h.DataDirPath)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	http.Redirect(w, r, "/mock", http.StatusFound)
-}
-
-//DeleteHandler saves new mock entity.
-func (h *Pagehandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Path[len("/mock/delete/"):]
-
-	//validate input!
-	reg := regexp.MustCompile("[0-9A-Za-z_]+")
-	match := reg.FindAllStringSubmatch(name, -1)
-	if len(match) != 1 {
-		http.Error(w, "Invalid request, name may only be [0-9A-Za-z_]: "+r.URL.String(), http.StatusBadRequest)
-		return
-	}
-
-	dir := h.DataDirPath
-	err := os.Remove(dir + "/" + name + ConfEXT)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-	}
-	err = os.Remove(dir + "/" + name + ContentEXT)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-	}
-	return
-}
-
 func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
-	log.Println("Loading all resources..")
+	log.Println("Loading all mocks..")
 	resources := "<ul>"
-	responseList, err := LoadAll(h.DataDirPath)
+	responseList, err := h.Fs.ReadAllMockConf(h.DataDirPath)
 	if err != nil {
 		log.Println("Error while loading resources: ", err)
 	}
@@ -285,7 +195,7 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 	for _, i := range *responseList {
 		resources = resources + fmt.Sprintf(`<div class="container" style="border: 1px solid black">
 																						<div style="float:right"> <button class="delete-btn" onclick="deleteResource(this.value)" value="%s"/></div>
-																						<div>%v <b>%s</b> <a href="mock/view/data/%s">View %s</a> </div>
+																						<div>%v <b>%s</b> <a href="mock/api/mock/data/%s">View %s</a> </div>
 																						<div>%s</div>
 																						<a href="mock/edit/%s"><button type="button">Edit</button></a>
 																					</div>`, i.GetFileName(), i.StatusCode, i.Method, i.GetFileName(), i.URI, i.ContentType, i.GetFileName())
@@ -305,7 +215,7 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 			            location.reload();
 			        }
 			    }
-			    xmlhttp.open("DELETE", '/mock/delete/'+filename, true);
+			    xmlhttp.open("DELETE", '/mock/api/mock/'+filename, true);
 			    xmlhttp.send();
 				}
 		}

@@ -12,42 +12,54 @@
 //You should have received a copy of the GNU Lesser General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/lgpl-3.0.txt>.
 
-package main
+package setting
 
 import (
 	"flag"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
+//Settings is application settings used to specify mock target and local file directories.
 type Settings struct {
 	Port        int
 	TargetURL   string
 	DataDirPath string
 }
 
-func (s *Settings) Init() error {
+//type SettingGetter interface {
+//	GetSetting() (Settings, error)
+//}
 
+//type URLGetter interface {
+//	GetURL() (string, error)
+//}
+
+type DirGetter interface {
+	Getwd() (dir string, err error)
+}
+
+//Create settings by using flags.
+func Create() (Settings, error) {
 	var port = flag.Int("p", 9988, "What port the mock should run on.")
 	var url = flag.String("u", "", "Base url to system to be mocked (request will be fetched once and stored locally).")
 	var dir = flag.String("d", "mad-mock-store", "Directory path to mock data and config files.")
 	flag.Parse() // parse the flags
 
+	s := Settings{}
+
 	s.Port = *port
 	s.TargetURL = *url
-
-	path, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	path, err := os.Getwd()
+	//path, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		return err
+		return s, err
 	}
 
 	// Removes : in "example:8080" since : is not valid directory character.
-	dirpath := path + "/" + *dir + "/" + strings.Replace(*url, ":", "_", -1)
+	dirpath := path + "/" + *dir + "/" + strings.Replace(*url, ":", "", -1)
 	s.DataDirPath = dirpath
-
-	return nil
-
+	return s, nil
 }
 
 // CreateDir creates directory relativly to execution path.
