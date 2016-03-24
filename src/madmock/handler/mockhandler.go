@@ -42,17 +42,20 @@ func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Request kunde ej hittas försöker slå upp mot target", err)
 		if r.Method != "GET" {
-			errorMsg := "Could not execute request for: " + r.URL.String() + "\n" + r.Method + " should be executed manually using GUI."
-			log.Println(errorMsg)
-			w.Write([]byte(errorMsg))
-			return
-		}
-		//do real request do targetet system, to retrive information from system.
-		m, err = h.requestInfo(w, r)
-		if err != nil {
-			log.Printf("%s \n", err)
-			http.Error(w, "Resource unavailable: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
-			return
+			body := "Could not execute request for: " + r.URL.String() + "\n" + r.Method + " should be executed manually using GUI."
+			m = &model.MockConf{URI: r.URL.RequestURI(), Method: r.Method, StatusCode: http.StatusOK}
+			err := h.Fs.WriteMock(*m, []byte(body), h.DataDirPath)
+			if err != nil {
+				http.Error(w, "Error occured when requesting: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
+			}
+		} else {
+			//do real request do targetet system, to retrive information from system.
+			m, err = h.requestInfo(w, r)
+			if err != nil {
+				log.Printf("%s \n", err)
+				http.Error(w, "Resource unavailable: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 
