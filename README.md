@@ -12,7 +12,7 @@ Configuration
 * windows: ```set GOPATH=/project/path/madmock```
 
 ### Build application ###
-go install mad-mock
+go install madmock
 
 ## Run application
 Application is located in $GOPATH/bin.
