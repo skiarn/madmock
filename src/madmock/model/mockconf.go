@@ -77,9 +77,9 @@ func (c *MockConf) GetFileName() string {
 
 //GetMockFileName returns the base name of a mock.
 func GetMockFileName(r *http.Request) string {
-	log.Println("GetMockFileName:" + r.Method + "-" + r.RequestURI)
+	log.Println("GetMockFileName:" + r.Method + "-" + r.URL.RequestURI())
 	hasher := sha1.New()
-	hasher.Write([]byte(r.Method + "-" + r.RequestURI))
+	hasher.Write([]byte(r.Method + "-" + r.URL.RequestURI()))
 	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
 	return filename
 }

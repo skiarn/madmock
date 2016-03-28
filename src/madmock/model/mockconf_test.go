@@ -6,22 +6,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 )
 
-//func TestGetMockFileName_ShouldReturnFilename(t *testing.T) {
-//Equals to base 32 uri = / method = GET
-//expectedFilename := "AZH5Y2SPPMLFNUGNVXRJGON64IUV3FNB"
-//req, err := http.NewRequest("GET", "http://myservice.com/", strings.NewReader(string("body")))
-//if err != nil {
-//	t.Errorf("%v", err)
-//}
-//got := model.GetMockFileName(req)
+func TestGetMockFileName_ShouldReturnFilename(t *testing.T) {
+	//Equals to base 32 uri = / method = GET
+	expectedFilename := "AZH5Y2SPPMLFNUGNVXRJGON64IUV3FNB"
+	req, err := http.NewRequest("GET", "http://myservice.com/", strings.NewReader(string("body")))
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+	got := model.GetMockFileName(req)
 
-//if got != expectedFilename {
-//	t.Errorf("Expected: %v but got: %v", expectedFilename, got)
-//}
-//}
+	if got != expectedFilename {
+		t.Errorf("Expected: %v but got: %v", expectedFilename, got)
+	}
+}
 
 func TestGetFileName_ShouldReturnEncodedFilename(t *testing.T) {
 	//Equals to base 32 uri = / method = GET
@@ -32,6 +33,17 @@ func TestGetFileName_ShouldReturnEncodedFilename(t *testing.T) {
 		t.Errorf("Expected: %v but got: %v", expectedFilename, got)
 	}
 }
+
+func TestGetFileNameWithQueries_ShouldReturnEncodedFilename(t *testing.T) {
+	//GET-/example/query?value=abc&value2=cba = RYK2253FOOJI773UXZASWXUM4AA3CTEF
+	expectedFilename := "RYK2253FOOJI773UXZASWXUM4AA3CTEF"
+	m := model.MockConf{URI: "/example/query?value=abc&value2=cba", Method: "GET", ContentType: "contentType", StatusCode: 418}
+	got := m.GetFileName()
+	if got != expectedFilename {
+		t.Errorf("Expected: %v but got: %v", expectedFilename, got)
+	}
+}
+
 func TestReadResponse_ShouldBuildMockFromResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "RandomContentType")
