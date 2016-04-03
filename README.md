@@ -12,6 +12,7 @@ Configuration
 * windows: ```set GOPATH=/project/path/madmock```
 
 ### Build application ###
+go get golang.org/x/net/websocket
 go install madmock
 
 ## Run application

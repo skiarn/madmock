@@ -15,27 +15,48 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"madmock/handler"
 	"madmock/setting"
+	"madmock/ws"
 	"net/http"
+	"os"
 	"strconv"
+
+	"golang.org/x/net/websocket"
 )
 
+var logger *log.Logger
+var errorlog *os.File
+
 func main() {
+	errorlog, err := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Printf("error opening file: %v", err)
+		os.Exit(1)
+	}
+	defer errorlog.Close()
+	logger = log.New(errorlog, "applog: ", log.Lshortfile|log.LstdFlags)
+
 	settings, err := setting.Create()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	err = settings.CreateDir()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	mux := http.NewServeMux()
 	pagehandler := handler.NewPageHandler(settings.DataDirPath)
 	curdhandler := handler.NewMockCURDHandler(settings.DataDirPath)
 	viewDataHandler := handler.NewViewDataHandler(settings.DataDirPath)
-	mockhandler := handler.NewMockhandler(settings.TargetURL, settings.DataDirPath)
+
+	wsHandler := ws.NewHandler(logger)
+	mockhandler := handler.NewMockhandler(settings.TargetURL, settings.DataDirPath, *wsHandler)
+	mux.Handle("/mock/wsmockinfo", websocket.Handler(wsHandler.WSMockInfoServer))
+	go wsHandler.Run()
+
 	mux.Handle("/mock", &pagehandler)
 	mux.Handle("/mock/api/mock/", &curdhandler)
 	mux.Handle("/mock/api/mock/data/", &viewDataHandler)
@@ -43,6 +64,6 @@ func main() {
 	mux.HandleFunc("/mock/edit/", pagehandler.EditHandler)
 	mux.HandleFunc("/mock/new/", pagehandler.New)
 	mux.Handle("/", &mockhandler)
-	log.Println("Server to listen on a port: ", settings.Port)
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(settings.Port), mux))
+	logger.Printf("Server to listen on a port: %v \n", settings.Port)
+	logger.Fatal(http.ListenAndServe(":"+strconv.Itoa(settings.Port), mux))
 }

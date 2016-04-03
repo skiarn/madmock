@@ -15,11 +15,13 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"madmock/filesys"
 	"madmock/model"
+	"madmock/ws"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -51,11 +53,13 @@ type Mockhandler struct {
 	DataDirPath string
 	Fs          filesys.FileSystem
 	Client      HttpClient
+
+	WSMockInfoHandler ws.Handler
 }
 
 //NewMockhandler handles initzialisation of NewMockhandler.
-func NewMockhandler(targetURL string, dirpath string) Mockhandler {
-	return Mockhandler{TargetURL: targetURL, DataDirPath: dirpath, Fs: filesys.LocalFileSystem{}, Client: client{}}
+func NewMockhandler(targetURL string, dirpath string, wsh ws.Handler) Mockhandler {
+	return Mockhandler{TargetURL: targetURL, DataDirPath: dirpath, Fs: filesys.LocalFileSystem{}, Client: client{}, WSMockInfoHandler: wsh}
 }
 
 func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -154,11 +158,18 @@ func (h *Mockhandler) SendMockResponse(m *model.MockConf, w http.ResponseWriter,
 		return
 	}
 
-	log.Println("Sending message:", string(d))
 	w.Header().Set("Content-Length", strconv.FormatInt(int64(len(d)), 10)) //strconv.FormatInt(dstat.Size(), 10))
 	w.Header().Set("Content-Type", m.ContentType)
 	w.WriteHeader(m.StatusCode)
 	w.Write(d)
 	log.Printf("Writing status code:%v\n", m.StatusCode)
 	log.Printf("%v bytes %s\n", len(d), r.URL.String())
+
+	wsmsg, err := json.Marshal(m)
+	if err != nil {
+		log.Printf("Websocket error: %s \n", err)
+		return
+	}
+	msg := ws.Message{Data: wsmsg}
+	h.WSMockInfoHandler.Send(&msg)
 }

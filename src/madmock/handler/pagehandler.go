@@ -38,10 +38,10 @@ const css = "<style>" + `
 									html,
 									body {
 										height: 100%;
-										background-color: #3F51B5;
+										background-color: white;
 									}
 									body {
-										color: #fff;
+										color: black;
 										text-align: center;
 										text-shadow: 0 1px 3px rgba(0,0,0,.5);
 									}
@@ -220,9 +220,74 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 				}
 		}
 	</script>`
+
+	ongoingForm := fmt.Sprintf(`<div id="ongoing"> </div>`)
+	wsScript := fmt.Sprintf(`<script>
+		document.addEventListener("DOMContentLoaded", function() {
+  		initWS();
+		});
+	function initWS(){
+		var ws = null;
+		if (!window["WebSocket"]) {
+			alert("Error: Your browser does not support web sockets.")
+		} else {
+			console.log("creating ws -> ws://%s/mock/wsmockinfo")
+			ws = new WebSocket("ws://%s/mock/wsmockinfo");
+			ws.onmessage = function(e) {
+
+				var localRaw = localStorage.getItem('mockresponses');
+				if (typeof(localRow) !== 'undefined') {
+					var list = Object.keys(localRaw).map(function(k) { return localRaw[k] });
+					if (! (Array.isArray(list))) {
+						list = [];
+					}
+				} else {
+					list = [];
+				}
+
+				var mockItem = JSON.parse(e.data)
+				console.log("event" + mockItem)
+				list.push(mockItem)
+
+				var mstr = JSON.stringify(list[0])
+				console.log("request:" + mstr);
+				addToOngoing(list[0])
+
+				//localStorage.setItem('mockresponses', list);
+
+			};
+			ws.onerror = function(e) {
+					console.log("got error:", e);
+			};
+			ws.onclose = function(e) {
+					console.log("got close:", e);
+			};
+		}
+	}
+	function addToOngoing(item) {
+	var a = document.createElement('a');
+	var linkText = document.createTextNode(item.uri);
+	a.appendChild(linkText);
+	a.title = item.uri;
+	a.href = item.uri;
+
+	var bold = document.createElement("b");
+	var bcontent = document.createTextNode(item.status + " " + item.method + " ");
+
+  var newDiv = document.createElement("div");
+  newDiv.appendChild(bcontent); //add the text node to the newly created div.
+	newDiv.appendChild(a);
+  // add the newly created element and its content into the DOM
+  var currentDiv = document.getElementById("ongoing");
+	//currentDiv.appendChild(newDiv);
+	currentDiv.insertBefore(newDiv, currentDiv.firstChild);
+
+  //document.body.insertBefore(newDiv, currentDiv);
+}</script>`, r.Host, r.Host)
+
 	resources = resources + "</ul>"
 
-	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div><div style="float:center">%s</div>`, title, resources, newform)
-	page := "<html><head>" + script + css + "</head>" + "<body>" + content + "</body></html>"
+	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div><div>%s</div><div style="float:center">%s</div>`, title, ongoingForm, resources, newform)
+	page := "<html><head>" + script + wsScript + css + "</head>" + "<body>" + content + "</body></html>"
 	fmt.Fprintf(w, "%s", page)
 }
