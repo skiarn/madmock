@@ -2,7 +2,6 @@ package filesys
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -53,7 +52,7 @@ func (LocalFileSystem) WriteMock(c model.MockConf, content []byte, dirpath strin
 
 	err = ioutil.WriteFile(dirpath+"/"+c.GetFileName()+ContentEXT, content, 0644)
 	err = ioutil.WriteFile(dirpath+"/"+c.GetFileName()+ConfEXT, b, 0644)
-	log.Println("Finished writing mock:", dirpath+"/"+c.GetFileName())
+	log.Printf("%s \t cached -> \t %s \n", c.URI, dirpath+"/"+c.GetFileName())
 	return err
 
 }
@@ -76,7 +75,6 @@ func (fs LocalFileSystem) ReadAllMockConf(dirpath string) (*model.MockConfs, err
 	for _, file := range files {
 		if file.Mode().IsRegular() {
 			if filepath.Ext(file.Name()) == ConfEXT {
-				fmt.Println("Found: " + file.Name())
 				data, err := ioutil.ReadFile(dirpath + "/" + file.Name())
 				if err != nil {
 					return nil, err
@@ -92,10 +90,8 @@ func (fs LocalFileSystem) ReadAllMockConf(dirpath string) (*model.MockConfs, err
 
 //ReadResource returns a reader to the resource.
 func (LocalFileSystem) ReadResource(filepath string) (io.Reader, error) {
-	log.Println("Trying to read resource: ", filepath)
 	d, err := os.Open(filepath)
 	if err != nil {
-		log.Printf("Failed to lead resource: %s", filepath)
 		return nil, err
 	}
 	//defer d.Close()

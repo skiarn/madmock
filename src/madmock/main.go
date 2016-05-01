@@ -48,7 +48,7 @@ func main() {
 		logger.Fatal(err)
 	}
 	mux := http.NewServeMux()
-	pagehandler := handler.NewPageHandler(settings.DataDirPath)
+	pagehandler := handler.NewPageHandler(settings.DataDirPath, settings.TargetURL)
 	curdhandler := handler.NewMockCURDHandler(settings.DataDirPath)
 	viewDataHandler := handler.NewViewDataHandler(settings.DataDirPath)
 

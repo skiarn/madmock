@@ -16,7 +16,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"madmock/filesys"
@@ -44,7 +43,9 @@ func (client) RequestTargetInfo(targetURL string, w http.ResponseWriter, r *http
 	}
 	copyHeader(r.Header, &request.Header)
 
-	return client.Do(request)
+	resp, err := client.Do(request)
+	log.Printf("%s %s \t %v \n", r.Method, targetURL, resp.StatusCode)
+	return resp, err
 }
 
 //Mockhandler handles request to be mocked.
@@ -64,12 +65,10 @@ func NewMockhandler(targetURL string, dirpath string, wsh ws.Handler) Mockhandle
 
 func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mConfFileName := h.DataDirPath + "/" + model.GetMockFileName(r) + filesys.ConfEXT
-	log.Println("Trying to read conf file:", mConfFileName)
 	m, err := h.Fs.ReadMockConf(mConfFileName)
 	if err != nil {
-		log.Println("Request kunde ej hittas försöker slå upp mot target", err)
 		if r.Method != "GET" {
-			body := "Could not execute request for: " + r.URL.String() + "\n" + r.Method + " should be executed manually using GUI."
+			body := "Mock only executes GET requests. " + r.URL.String() + "\n" + r.Method + " is faked and can be edited in mock GUI. see /mock"
 			m = &model.MockConf{URI: r.URL.RequestURI(), Method: r.Method, StatusCode: http.StatusOK}
 			err := h.Fs.WriteMock(*m, []byte(body), h.DataDirPath)
 			if err != nil {
@@ -79,7 +78,6 @@ func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			//do real request do targetet system, to retrive information from system.
 			m, err = h.requestInfo(w, r)
 			if err != nil {
-				log.Printf("%s \n", err)
 				http.Error(w, "Resource unavailable: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -115,16 +113,13 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*mode
 		return nil, err
 	}
 
-	log.Println("Got response: ", response.Request.URL)
 	defer response.Body.Close()
 	contents, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Response:", contents)
 	c := model.ReadResponse(response)
 
-	log.Println("Created:", c)
 	err = h.Fs.WriteMock(*c, contents, h.DataDirPath)
 	if err != nil {
 		return nil, err
@@ -144,7 +139,6 @@ func copyHeader(source http.Header, dest *http.Header) {
 //SendMockResponse sending a response based on a mock.
 func (h *Mockhandler) SendMockResponse(m *model.MockConf, w http.ResponseWriter, r *http.Request) {
 	filename := h.DataDirPath + "/" + model.GetMockFileName(r) + filesys.ContentEXT
-	log.Println("Trying to open:", filename)
 	dr, err := h.Fs.ReadResource(filename) //ioutil.ReadFile(filename)
 	if err != nil {
 		log.Printf("%s \n", err)
@@ -162,8 +156,7 @@ func (h *Mockhandler) SendMockResponse(m *model.MockConf, w http.ResponseWriter,
 	w.Header().Set("Content-Type", m.ContentType)
 	w.WriteHeader(m.StatusCode)
 	w.Write(d)
-	log.Printf("Writing status code:%v\n", m.StatusCode)
-	log.Printf("%v bytes %s\n", len(d), r.URL.String())
+	log.Printf("%v \t %s \t %v bytes\n", m.StatusCode, r.URL.String(), len(d))
 
 	wsmsg, err := json.Marshal(m)
 	if err != nil {

@@ -24,13 +24,14 @@ import (
 
 // Pagehandler handles index page.
 type Pagehandler struct {
+	TargetURL   string
 	DataDirPath string
 	Fs          filesys.FileSystem
 }
 
 //NewPageHandler handles initzialisation of PageHandler.
-func NewPageHandler(path string) Pagehandler {
-	return Pagehandler{DataDirPath: path, Fs: filesys.LocalFileSystem{}}
+func NewPageHandler(path string, targeturl string) Pagehandler {
+	return Pagehandler{DataDirPath: path, TargetURL: targeturl, Fs: filesys.LocalFileSystem{}}
 }
 
 const title = "Mad Mock"
@@ -125,9 +126,8 @@ func (h *Pagehandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //EditHandler handles resource page to edit item.
 func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Path[len("/mock/edit/"):]
-	log.Println("Trying to edit resource: ", name)
 	editform := "<div class=\"container\"> <h4>Editing</h4>" + "<h5>Headers</h5><p id=\"headersP\"></p> <br>" + saveformHTML() + "</div>"
-	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div>`, title, editform)
+	content := fmt.Sprintf(`<h1>%s</h1><h4>%s</h4><div>%s</div>`, title, h.TargetURL, editform)
 	script := fmt.Sprintf(`<script>
 		function getResource() {
 				//ajaxcall get resource data.
@@ -177,14 +177,13 @@ func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 //New serves a page for creating a new mock entity.
 func (h *Pagehandler) New(w http.ResponseWriter, r *http.Request) {
 	postform := "<div class=\"container\"> <h4>New</h4>" + saveformHTML() + "</div>"
-	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div>`, title, postform)
+	content := fmt.Sprintf(`<h1>%s</h1><h4>%s</h4><div>%s</div>`, title, h.TargetURL, postform)
 
 	page := "<html><head>" + css + "</head>" + "<body>" + content + "</body></html>"
 	fmt.Fprintf(w, "%s", page)
 }
 
 func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
-	log.Println("Loading all mocks..")
 	resources := "<ul>"
 	responseList, err := h.Fs.ReadAllMockConf(h.DataDirPath)
 	if err != nil {
@@ -287,7 +286,7 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 
 	resources = resources + "</ul>"
 
-	content := fmt.Sprintf(`<h1>%s</h1><div>%s</div><div>%s</div><div style="float:center">%s</div>`, title, ongoingForm, resources, newform)
+	content := fmt.Sprintf(`<h1>%s</h1><h4>%s</h4><div>%s</div><div>%s</div><div style="float:center">%s</div>`, title, h.TargetURL, ongoingForm, resources, newform)
 	page := "<html><head>" + script + wsScript + css + "</head>" + "<body>" + content + "</body></html>"
 	fmt.Fprintf(w, "%s", page)
 }

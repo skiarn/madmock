@@ -19,7 +19,6 @@ import (
 	"encoding/base32"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,14 +69,12 @@ func ValidateStatusCode(code string) (int, error) {
 func (c *MockConf) GetFileName() string {
 	hasher := sha1.New()
 	hasher.Write([]byte(c.Method + "-" + c.URI))
-	log.Println("GetFileName from mockconf:" + c.Method + "-" + c.URI)
 	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
 	return filename
 }
 
 //GetMockFileName returns the base name of a mock.
 func GetMockFileName(r *http.Request) string {
-	log.Println("GetMockFileName:" + r.Method + "-" + r.URL.RequestURI())
 	hasher := sha1.New()
 	hasher.Write([]byte(r.Method + "-" + r.URL.RequestURI()))
 	filename := base32.StdEncoding.EncodeToString(hasher.Sum(nil))
