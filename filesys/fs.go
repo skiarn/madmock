@@ -5,9 +5,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"madmock/model"
 	"os"
 	"path/filepath"
+
+	"github.com/skiarn/madmock/model"
 )
 
 //ConfEXT is fileextension for config file.

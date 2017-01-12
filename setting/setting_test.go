@@ -15,11 +15,12 @@
 package setting_test
 
 import (
-	"madmock/setting"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/skiarn/madmock/setting"
 )
 
 func TestInitSetting_WhenUrlHasPortNumber(t *testing.T) {

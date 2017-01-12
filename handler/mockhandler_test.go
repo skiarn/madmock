@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"madmock/handler"
-	"madmock/model"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/skiarn/madmock/handler"
+	"github.com/skiarn/madmock/model"
 )
 
 const testDataDirPath = "/path/mad-mock-store"

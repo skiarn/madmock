@@ -2,12 +2,13 @@ package model_test
 
 import (
 	"fmt"
-	"madmock/model"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/skiarn/madmock/model"
 )
 
 func TestGetMockFileName_ShouldReturnFilename(t *testing.T) {

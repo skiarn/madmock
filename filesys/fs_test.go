@@ -2,11 +2,12 @@ package filesys_test
 
 import (
 	"errors"
-	"madmock/filesys"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/skiarn/madmock/filesys"
 )
 
 //func (f *File) Read(b []byte) (n int, err error) { return }

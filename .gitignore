@@ -11,11 +11,16 @@ _test
 *.[568vq]
 [568vq].out
 
+#app specific
+mad-mock-store
+madmock
+
 *.cgo1.go
 *.cgo2.c
 _cgo_defun.c
 _cgo_gotypes.go
 _cgo_export.*
+*.txt
 
 _testmain.go
 

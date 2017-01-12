@@ -15,14 +15,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"madmock/handler"
-	"madmock/setting"
-	"madmock/ws"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/skiarn/madmock/handler"
+	"github.com/skiarn/madmock/setting"
+	"github.com/skiarn/madmock/ws"
 
 	"golang.org/x/net/websocket"
 )
@@ -31,21 +31,21 @@ var logger *log.Logger
 var errorlog *os.File
 
 func main() {
-	errorlog, err := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Printf("error opening file: %v", err)
-		os.Exit(1)
-	}
-	defer errorlog.Close()
-	logger = log.New(errorlog, "applog: ", log.Lshortfile|log.LstdFlags)
+	//errorlog, err := os.OpenFile("log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	//if err != nil {
+	//	fmt.Printf("error opening file: %v", err)
+	//	os.Exit(1)
+	//}
+	//defer errorlog.Close()
+	logger = log.New(os.Stdout, "applog: ", log.Lshortfile|log.LstdFlags)
 
 	settings, err := setting.Create()
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 	err = settings.CreateDir()
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 	mux := http.NewServeMux()
 	pagehandler := handler.NewPageHandler(settings.DataDirPath, settings.TargetURL)

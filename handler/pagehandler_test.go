@@ -18,10 +18,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"madmock/handler"
-	"madmock/model"
 	"net/http"
 	"testing"
+
+	"github.com/skiarn/madmock/handler"
+	"github.com/skiarn/madmock/model"
 )
 
 //fsMockImpl is implementation of application mocked filesystem.

@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"madmock/filesys"
-	"madmock/model"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/skiarn/madmock/filesys"
+	"github.com/skiarn/madmock/model"
 )
 
 // ViewDataHandler handles functionality to view mock data.

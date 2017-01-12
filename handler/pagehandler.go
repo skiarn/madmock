@@ -17,9 +17,10 @@ package handler
 import (
 	"fmt"
 	"log"
-	"madmock/filesys"
-	"madmock/model"
 	"net/http"
+
+	"github.com/skiarn/madmock/filesys"
+	"github.com/skiarn/madmock/model"
 )
 
 // Pagehandler handles index page.
@@ -221,7 +222,7 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 	</script>`
 
 	ongoingForm := fmt.Sprintf(`<div id="ongoing"> </div>`)
-	wsScript := fmt.Sprintf(`<script>
+	wsScript := `<script>
 		document.addEventListener("DOMContentLoaded", function() {
   		initWS();
 		});
@@ -230,8 +231,8 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 		if (!window["WebSocket"]) {
 			alert("Error: Your browser does not support web sockets.")
 		} else {
-			console.log("creating ws -> ws://%s/mock/wsmockinfo")
-			ws = new WebSocket("ws://%s/mock/wsmockinfo");
+			console.log("creating ws -> ws://` + r.Host + `/mock/wsmockinfo")
+			ws = new WebSocket("ws://` + r.Host + `/mock/wsmockinfo");
 			ws.onmessage = function(e) {
 
 				var localRaw = localStorage.getItem('mockresponses');
@@ -270,11 +271,30 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 	a.title = item.uri;
 	a.href = item.uri;
 
-	var bold = document.createElement("b");
-	var bcontent = document.createTextNode(item.status + " " + item.method + " ");
+	var totalSeconds = new Date().getTime() / 1000;
+	var hours = parseInt( totalSeconds / 3600 ) % 24;
+	var minutes = parseInt( totalSeconds / 60 ) % 60;
+	var seconds = parseInt ( totalSeconds % 60 );
+	var timestamp = (hours < 10 ? "0" + hours : hours) + ":" + (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds  < 10 ? "0" + seconds : seconds);
+
+	var timestampNode = document.createTextNode(timestamp);
+	var timestampSpan = document.createElement("span");
+	timestampSpan.style.cssFloat = "left";
+	timestampSpan.appendChild(timestampNode);
+
+	var statusNode = document.createElement("span");
+	statusNode.appendChild(document.createTextNode(item.status));
+	statusNode.style.paddingRight = "5em";
+	statusNode.style.paddingLeft = "5em";
+	statusNode.style.cssFloat = "left";
+	var boldcontent = document.createElement("b");
+	boldcontent.style.cssFloat = "left";
+	boldcontent.appendChild(document.createTextNode(item.method));
 
   var newDiv = document.createElement("div");
-  newDiv.appendChild(bcontent); //add the text node to the newly created div.
+	newDiv.appendChild(timestampSpan);
+	newDiv.appendChild(statusNode);
+  newDiv.appendChild(boldcontent); //add the text node to the newly created div.
 	newDiv.appendChild(a);
   // add the newly created element and its content into the DOM
   var currentDiv = document.getElementById("ongoing");
@@ -282,7 +302,7 @@ func (h *Pagehandler) servePage(w http.ResponseWriter, r *http.Request) {
 	currentDiv.insertBefore(newDiv, currentDiv.firstChild);
 
   //document.body.insertBefore(newDiv, currentDiv);
-}</script>`, r.Host, r.Host)
+}</script>`
 
 	resources = resources + "</ul>"
 
