@@ -44,7 +44,6 @@ func (client) RequestTargetInfo(targetURL string, w http.ResponseWriter, r *http
 	}
 	copyHeader(r.Header, &request.Header)
 
-	log.Printf("Exec %s %s \t %s \n", r.Method, targetURL, request.URL)
 	resp, err := client.Do(request)
 	log.Printf("%s %s \t %v \n", r.Method, targetURL, resp.StatusCode)
 	return resp, err
@@ -110,7 +109,7 @@ func (h *Mockhandler) BuildTargetRequestURL(r *http.Request) string {
 
 func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*model.MockConf, error) {
 	targetURL := h.BuildTargetRequestURL(r)
-	log.Println("targetURL:", targetURL)
+
 	response, err := h.Client.RequestTargetInfo(targetURL, w, r)
 	if err != nil {
 		return nil, err

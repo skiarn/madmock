@@ -2,13 +2,15 @@
 # and a workspace (GOPATH) configured at /go.
 FROM golang
 
+ENV TARGET github.com
+
 # Download and Build mad-mock application inside the container.
-RUN go get github.com/skiarn/mad-mock/src/madmock
-RUN go install github.com/skiarn/mad-mock/src/madmock
+RUN go get github.com/skiarn/madmock
+RUN go install github.com/skiarn/madmock
 
 # Run the application when the container starts.
-#                            Enter host i  wish to mock. Change this to your system ip. ex: -u=127.0.0.1:9090
-ENTRYPOINT /go/bin/madmock -u=http://github.com
+# Enter host to mock. Change this to your system ip. ex: -u=127.0.0.1:9090
+ENTRYPOINT /go/bin/madmock -u=$TARGET
 
-# Document that the service listens on port 8080.
-EXPOSE 8080
+# Service listens on port 9988.
+EXPOSE 9988
