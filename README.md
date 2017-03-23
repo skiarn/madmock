@@ -1,5 +1,10 @@
 # mad-mock
 **The application is to be used as a http mock.**
+Purpose of tool/server is to ensure communication to another resource is read only and fakeable without entering the external system. 
+
+It works like this, request to other systems passes through this tool and this tool will cache the results. If the request is a modifiable call such as POST/PUT/DELETE the request is never executed against the target system but instead a faked response is sent back.
+
+Its possible to modify and create fake responses using a web gui or modify raw files on disk.
 
 ## Manually
 ### How to get started ###
