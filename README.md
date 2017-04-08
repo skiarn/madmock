@@ -7,7 +7,7 @@ It works like this, request to other systems passes through this tool and this t
 Its possible to modify and create fake responses using a web gui or modify raw files on disk.
 
 Try it out using dockerhub!
-`docker run -e PORT=7070 -p 8080:7070 --rm -it skiarn/madmock bash`
+`docker run -e TARGET=github.com -e PORT=7070 -p 8080:7070 --rm -it skiarn/madmock bash`
 
 ## Manually
 ### How to get started ###
@@ -42,7 +42,7 @@ nohup ./madmock -u=127.0.0.1:9090 > server.log 2>&1 &
 
 ## Docker
 Try it out using dockerhub!
-`docker run -e PORT=7070 -p 8080:7070 --rm -it skiarn/madmock bash`
+`docker run -e TARGET=github.com -e PORT=7070 -p 8080:7070 --rm -it skiarn/madmock bash`
 
 Or build yourself:
 * git clone http://github.com/skiarn/mad-mock
