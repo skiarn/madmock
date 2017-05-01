@@ -6,26 +6,11 @@ It works like this, request to other systems passes through this tool and this t
 
 Its possible to modify and create fake responses using a web gui or modify raw files on disk.
 
-Try it out using dockerhub!
+**Try it out using dockerhub!**
 `docker run -e TARGET=github.com -e PORT=7070 -p 8080:7070 --rm -it skiarn/madmock bash`
 
-## Manually
-### How to get started ###
-
-* Install go - https://golang.org/dl/
-* git clone http://github.com/skiarn/mad-mock
-
-Configuration
-* linux/mac: ```export GOPATH=/project/path/madmock```
-* windows: ```set GOPATH=/project/path/madmock```
-
-### Build application ###
-go get golang.org/x/net/websocket
-go install madmock
-
-## Run application
-Application is located in $GOPATH/bin.
-* For help ```./madmock --help ```
+Need to setup or modify messages? 
+curl -H "Content-Type: application/json" -X POST -d '{"uri":"/examplePost","method":"GET","contenttype":"text/html; charset=utf-8","status":200, "body": "body payload..."}' localhost:8080/mock/api/mock/
 
 ```
 Usage of ./madmock:
