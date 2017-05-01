@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
-
+	"strconv"
 	"github.com/skiarn/madmock/filesys"
 	"github.com/skiarn/madmock/model"
 )
@@ -81,28 +80,40 @@ func (h *MockCURDHandler) get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type mockDTO struct {
+                        URI         string            `json:"uri"`
+                        Method      string            `json:"method"`
+                        ContentType string            `json:"contenttype"`
+                        StatusCode  int               `json:"status"`
+                        Body        string            `json:"body"`
+                }
+
 //Save a new mock entity on serverside. Will create new resource if not existing and if it already exist it will update the resource.
 func (h *MockCURDHandler) save(w http.ResponseWriter, r *http.Request) {
+	var c model.MockConf
+	var body string
 	paramErrors := make(map[string]string)
-	uri := r.FormValue("URI")
-	method := r.FormValue("Method")
-	contentType := r.FormValue("ContentType")
-	body := r.FormValue("body")
-	statuscodeFV := r.FormValue("StatusCode")
-	if strings.TrimSpace(uri) == "" {
-		paramErrors["URI"] = "missing"
+	if r.Header.Get("Content-Type") == "application/json" {
+		var dto mockDTO
+		err := json.NewDecoder(r.Body).Decode(&dto)
+		if err != nil {
+			paramErrors["json"] = err.Error()
+		}
+		c = model.MockConf{URI: dto.URI, Method: dto.Method, ContentType: dto.ContentType, StatusCode: dto.StatusCode}
+		body = dto.Body
+		defer r.Body.Close()
+	} else {
+		uri := r.FormValue("URI")
+		method := r.FormValue("Method")
+		contentType := r.FormValue("ContentType")
+		body = r.FormValue("body")
+		statuscodeFV := r.FormValue("StatusCode")
+		statuscode, _ := strconv.Atoi(statuscodeFV)
+		c = model.MockConf{URI: uri, Method: method, ContentType: contentType, StatusCode: statuscode}
 	}
+	isValid, paramErrors := c.Valid()
 
-	if strings.TrimSpace(contentType) == "" {
-		paramErrors["ContentType"] = "missing"
-	}
-
-	statuscode, err := model.ValidateStatusCode(statuscodeFV)
-	if err != nil {
-		paramErrors["StatusCode"] = err.Error()
-	}
-
-	if len(paramErrors) != 0 {
+	if !isValid {	
 		validationErrors, err := json.Marshal(paramErrors)
 		if err != nil {
 			log.Println(err)
@@ -111,9 +122,7 @@ func (h *MockCURDHandler) save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := model.MockConf{URI: uri, Method: method, ContentType: contentType, StatusCode: statuscode}
-
-	err = h.Fs.WriteMock(c, []byte(body), h.DataDirPath)
+	err := h.Fs.WriteMock(c, []byte(body), h.DataDirPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

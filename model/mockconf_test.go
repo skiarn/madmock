@@ -11,6 +11,116 @@ import (
 	"github.com/skiarn/madmock/model"
 )
 
+func TestValid(t *testing.T) {
+        m := model.MockConf {URI: "/", Method: "POST", ContentType: "application/json", StatusCode: 200}
+        got, err := m.Valid()
+        if got != true {
+		t.Errorf("Expected valid but got errors: %v", err)
+        } 
+}
+
+func TestValid_StatusCode(t *testing.T) {
+        m := model.MockConf {StatusCode: 200}
+        got, err := m.Valid()
+        if got == false {
+                if err["StatusCode"] != "" {
+                        t.Errorf("Expected not missing but got: %v", err["StatusCode"])
+                }
+        } else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+        }
+}
+
+func TestValid_StatusCode_Invalid(t *testing.T) {
+        m := model.MockConf {StatusCode: 1}
+        got, err := m.Valid()
+        if got == false {
+                if err["StatusCode"] != "1 is unknown" {
+                        t.Errorf("Expected 1 is unknown but got: %v", err["StatusCode"])
+                }
+        } else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+        }
+}
+
+//TestValid_ContentType
+func TestValid_ContentType(t *testing.T) {
+        m := model.MockConf {ContentType: "application/json"}
+        got, err := m.Valid()
+        if got == false {
+                if err["ContentType"] != "" {
+                        t.Errorf("Expected not missing but got: %v", err["ContentType"])
+                }
+        } else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+        }
+}
+
+//TestValid_ContentType_Missing
+func TestValid_ContentType_Missing(t *testing.T) {
+        m := model.MockConf {ContentType: ""}
+        got, err := m.Valid()
+        if got == false {
+                if err["ContentType"] != "missing" {
+                        t.Errorf("Expected missing but got: %v", err["ContentType"])
+                }
+        } else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+        }
+}
+
+//TestValid_Method
+func TestValid_Method(t *testing.T) {
+        m := model.MockConf {Method: "POST"}
+        got, err := m.Valid()
+        if got == false {
+                if err["Method"] != "" {
+                        t.Errorf("Expected not missing but got: %v", err["Method"])
+                }
+        } else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+        }
+}
+
+//TestValid_Method_Missing
+func TestValid_Method_Missing(t *testing.T) {
+        m := model.MockConf {URI: "", Method: "", ContentType: "", StatusCode: 200}
+        got, err := m.Valid()
+        if got == false {
+                if err["Method"] != "missing" {
+                        t.Errorf("Expected missing but got: %v", err["Method"])
+                }
+        } else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+        }
+}
+
+//TestValid_URI
+func TestValid_URI(t *testing.T) {
+	m := model.MockConf {URI: "/"}
+	got, err := m.Valid()
+	if got == false {
+		if err["URI"] != "" {
+			t.Errorf("Expected not missing but got: %v", err["URI"])
+		}
+	} else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+	}
+}
+
+//TestValid_URI_Missing
+func TestValid_URI_Missing(t *testing.T) {
+	m := model.MockConf {URI: ""}
+	got, err := m.Valid()
+	if got == false {
+		if err["URI"] != "missing" {
+			t.Errorf("Expected missing but got: %v", err["URI"])
+		}
+	} else {
+                t.Errorf("Expected validation errors. But no errors detected.", m)
+	}
+}
+
 func TestGetMockFileName_ShouldReturnFilename(t *testing.T) {
 	//Equals to base 32 uri = / method = GET
 	expectedFilename := "AZH5Y2SPPMLFNUGNVXRJGON64IUV3FNB"

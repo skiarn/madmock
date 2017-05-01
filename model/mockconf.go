@@ -38,6 +38,28 @@ type MockConf struct {
 //MockConfs is a list of MockConf.
 type MockConfs []MockConf
 
+//Valid returns true or false. Second argument is map containing errors. Key is field name and value is error message.
+func (c MockConf) Valid()(bool, map[string]string){
+	paramErrors := make(map[string]string)
+	if strings.TrimSpace(c.URI) == "" {
+		paramErrors["URI"] = "missing"
+	}
+
+	if strings.TrimSpace(c.Method) == "" {
+		paramErrors["Method"] = "missing"
+	}
+
+	if strings.TrimSpace(c.ContentType) == "" {
+		paramErrors["ContentType"] = "missing"
+	}
+
+	_, err := ValidateStatusCode(strconv.Itoa(c.StatusCode))
+	if err != nil {
+		paramErrors["StatusCode"] = err.Error()
+	}
+	return len(paramErrors) == 0, paramErrors
+}
+
 //ValidStatusCodes is valid http status codes.
 var ValidStatusCodes = [...]int{100, 101, 200, 201, 202, 203, 204, 205, 206, 300, 301, 302, 303, 304, 305, 307, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 500, 501, 502, 503, 504, 505}
 
