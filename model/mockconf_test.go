@@ -11,6 +11,16 @@ import (
 	"github.com/skiarn/madmock/model"
 )
 
+func TestSortURI(t *testing.T){
+	u, _ := url.Parse("http://bing.com/search?q=dotnet&q=2dotnet&q=6dotnet&q=3dotnet&a=first")
+	model.SortURI(u)
+	expected := "http://bing.com/search?a=first&q=2dotnet&q=3dotnet&q=6dotnet&q=dotnet"
+	got := u.String()
+	if got != expected {
+		t.Errorf("Expected %s but got: %s", expected, got)
+	}
+}
+
 func TestValid(t *testing.T) {
         m := model.MockConf {URI: "/", Method: "POST", ContentType: "application/json", StatusCode: 200}
         got, err := m.Valid()

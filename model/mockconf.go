@@ -20,8 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"sort"
 )
 
 //MockConf represent a http call mock entity.
@@ -85,6 +87,19 @@ func ValidateStatusCode(code string) (int, error) {
 	}
 
 	return statuscode, nil
+}
+
+func SortURI(u *url.URL){
+	q := u.Query()	
+	var keys []string
+    	for k := range q {
+        	keys = append(keys, k)
+    	}
+    	sort.Strings(keys)
+	for _,k := range keys {
+	   	sort.Strings(q[k])
+	}	
+	u.RawQuery = q.Encode()
 }
 
 //GetFileName returns the filename for a MockConf enitiy.
