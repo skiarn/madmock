@@ -1,0 +1,4 @@
+#docker login
+docker build --no-cache . -t dev_madmock
+docker tag dev_madmock skiarn/madmock
+docker push skiarn/madmock
