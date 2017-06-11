@@ -29,6 +29,9 @@ nohup ./madmock -u=127.0.0.1:9090 > server.log 2>&1 &
 Try it out using dockerhub!
 `docker run -e TARGET=github.com -e PORT=7070 -p 8080:7070 --rm -it skiarn/madmock bash`
 
+Or want to build from source using docker,
+`docker run -it -p 9988:9988 --rm golang:1.6 sh -c "mkdir -p /go/src/github.com/skiarn; git clone http://github.com/skiarn/madmock /go/src/github.com/skiarn/madmock; go get golang.org/x/net/websocket; go run /go/src/github.com/skiarn/madmock/main.go -u=google.se; bash"`
+
 Or build yourself:
 * git clone http://github.com/skiarn/mad-mock
 * cd mad-mock
