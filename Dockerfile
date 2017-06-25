@@ -1,8 +1,5 @@
-#docker run -it -p 8080:9090 madmock bash
 #docker build -t madmock .
-#docker run -e PORT=7070 -p 8080:7070 --rm -it madmock bash
-# Start from a Debian image with the latest version of Go installed
-# and a workspace (GOPATH) configured at /go.
+#docker run -e TARGET=apple.com -e PORT=7070 -p 8080:7070 --rm -it madmock bash
 FROM golang:1.9
 
 ENV TARGET github.com
