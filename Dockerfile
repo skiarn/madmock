@@ -3,7 +3,7 @@
 #docker run -e PORT=7070 -p 8080:7070 --rm -it madmock bash
 # Start from a Debian image with the latest version of Go installed
 # and a workspace (GOPATH) configured at /go.
-FROM golang:1.6
+FROM golang:1.9
 
 ENV TARGET github.com
 ENV PORT 9090

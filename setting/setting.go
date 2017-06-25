@@ -57,8 +57,11 @@ func Create() (Settings, error) {
 	}
 
 	// Removes : in "example:8080" since : is not valid directory character.
-	dirpath := path + "/" + *dir + "/" + strings.Replace(*url, ":", "", -1)
-	s.DataDirPath = dirpath
+	if path == "" || path == "/" {
+		s.DataDirPath = *dir + "/" + strings.Replace(*url, ":", "", -1)
+	} else {
+		s.DataDirPath = path + "/" + *dir + "/" + strings.Replace(*url, ":", "", -1)
+	}
 	return s, nil
 }
 

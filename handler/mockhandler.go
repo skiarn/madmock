@@ -15,7 +15,9 @@
 package handler
 
 import (
+	"compress/gzip"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -36,7 +38,6 @@ type client struct{}
 
 func (client) RequestTargetInfo(targetURL string, w http.ResponseWriter, r *http.Request) (*http.Response, error) {
 	client := &http.Client{}
-
 	request, err := http.NewRequest(r.Method, targetURL, r.Body)
 	if err != nil {
 		log.Println("Failed to create request: ", request)
@@ -45,7 +46,6 @@ func (client) RequestTargetInfo(targetURL string, w http.ResponseWriter, r *http
 	copyHeader(r.Header, &request.Header)
 
 	resp, err := client.Do(request)
-	log.Printf("%s %s \t %v \n", r.Method, targetURL, resp.StatusCode)
 	return resp, err
 }
 
@@ -114,9 +114,20 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*mode
 	if err != nil {
 		return nil, err
 	}
+	var reader io.ReadCloser
+	switch response.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, err = gzip.NewReader(response.Body)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		reader = response.Body
+	}
+	defer reader.Close()
 
 	defer response.Body.Close()
-	contents, err := ioutil.ReadAll(response.Body)
+	contents, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,4 @@
+# docker run -p 8080:10 --rm github.com/skiarn/madmock -u=apple.com -p=10
+GOOS=linux go build -o madmock-linux
+docker build -f Dockerfile.alpine -t github.com/skiarn/madmock .
+rm -f madmock-linux
