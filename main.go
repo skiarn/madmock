@@ -18,6 +18,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 
 	"github.com/skiarn/madmock/handler"
@@ -53,7 +55,7 @@ func main() {
 	viewDataHandler := handler.NewViewDataHandler(settings.DataDirPath)
 
 	wsHandler := ws.NewHandler(logger)
-	mockhandler := handler.NewMockhandler(settings.TargetURL, settings.DataDirPath, *wsHandler)
+	mockhandler := handler.NewMockhandler(settings.TargetURL, settings.DataDirPath, wsHandler)
 	mux.Handle("/mock/wsmockinfo", websocket.Handler(wsHandler.WSMockInfoServer))
 	go wsHandler.Run()
 
@@ -65,5 +67,23 @@ func main() {
 	mux.HandleFunc("/mock/new/", pagehandler.New)
 	mux.Handle("/", &mockhandler)
 	logger.Printf("Server to listen on a port: %v \n", settings.Port)
+	openBrowser("http://localhost:" + strconv.Itoa(settings.Port) + "/mock")
 	logger.Fatal(http.ListenAndServe(":"+strconv.Itoa(settings.Port), mux))
+}
+
+func openBrowser(url string) error {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("cmd", "/c", "start", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = os.ErrInvalid
+	}
+
+	return err
 }

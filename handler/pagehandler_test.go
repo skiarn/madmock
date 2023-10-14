@@ -15,17 +15,15 @@
 package handler_test
 
 import (
-	"encoding/json"
 	"errors"
 	"io"
-	"net/http"
 	"testing"
 
 	"github.com/skiarn/madmock/handler"
 	"github.com/skiarn/madmock/model"
 )
 
-//fsMockImpl is implementation of application mocked filesystem.
+// fsMockImpl is implementation of application mocked filesystem.
 type fsMockImpl struct{}
 
 func (fsMockImpl) Remove(name string) error {
@@ -39,47 +37,24 @@ func (fsMockImpl) WriteMock(c model.MockConf, content []byte, dirpath string) er
 	return errors.New("WriteMock went horrible testy wrong")
 }
 func (fsMockImpl) ReadAllMockConf(dataDirPath string) (*model.MockConfs, error) {
-	return nil, errors.New("ReadAllMockConf went horrible testy wrong")
+	return &model.MockConfs{}, nil
 }
 func (fsMockImpl) ReadResource(filepath string) (io.Reader, error) {
 	return nil, errors.New("ReadResource went horrible testy wrong")
 }
 
-func TestPagehandlerHandleGet_WhenMissingBodyID(t *testing.T) {
-	expectedBody := `{"id":"missing"}`
-	expectedReturnCode := 400
-	//bytes.NewReader([]byte(expectedBody))
-
+func TestPagehandlerHandleGet_Page(t *testing.T) {
+	expectedReturnCode := 200
 	pagehandler := handler.Pagehandler{DataDirPath: "/test", Fs: fsMockImpl{}}
 
 	test := GenerateHandleTester(t, &pagehandler)
-	//w := test("GET", url.Values{})
-	w := test("GET", []byte(`{"id":"123456ID"}`))
+
+	w := test("GET", nil)
 	if w.Code != expectedReturnCode {
-		t.Errorf("Home page return %v Expected: %v", w.Code, expectedReturnCode)
+		t.Errorf("Expected %v but got %v", expectedReturnCode, w.Code)
 	}
-
-	response := make(map[string]string)
-	//err := json.Unmarshal(w.Body.Bytes(), &response)
-	decoder := json.NewDecoder(w.Body)
-	err := decoder.Decode(&response)
-
-	if err != nil {
-		t.Errorf("Error occured while Unmarshaling response...", err)
-	}
-	respData, _ := json.Marshal(response)
-	got := string(respData)
-	if got != expectedBody {
-		t.Errorf("Expected: %v but got: %v", expectedBody, got)
-	}
-}
-
-func xTestPagehandlerHandleGet(t *testing.T) {
-	pagehandler := handler.Pagehandler{DataDirPath: "/test"}
-	test := GenerateHandleTester(t, &pagehandler)
-	//w := test("GET", url.Values{})
-	w := test("GET", []byte(`{"id":"123456ID"}`))
-	if w.Code != http.StatusOK {
-		t.Errorf("Home page didn't return %v, response value: %v", http.StatusOK, w)
+	//expect body not empty
+	if w.Body.String() == "" {
+		t.Errorf("Expected body not empty but got %v", w.Body.String())
 	}
 }

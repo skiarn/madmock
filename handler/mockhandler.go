@@ -18,7 +18,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -29,7 +28,7 @@ import (
 	"github.com/skiarn/madmock/ws"
 )
 
-//HttpClient used for making requests to the target system to be mocked
+// HttpClient used for making requests to the target system to be mocked
 type HttpClient interface {
 	RequestTargetInfo(URL string, w http.ResponseWriter, r *http.Request) (*http.Response, error)
 }
@@ -49,18 +48,18 @@ func (client) RequestTargetInfo(targetURL string, w http.ResponseWriter, r *http
 	return resp, err
 }
 
-//Mockhandler handles request to be mocked.
+// Mockhandler handles request to be mocked.
 type Mockhandler struct {
 	TargetURL   string
 	DataDirPath string
 	Fs          filesys.FileSystem
 	Client      HttpClient
 
-	WSMockInfoHandler ws.Handler
+	WSMockInfoHandler ws.WSMockInfo
 }
 
-//NewMockhandler handles initzialisation of NewMockhandler.
-func NewMockhandler(targetURL string, dirpath string, wsh ws.Handler) Mockhandler {
+// NewMockhandler handles initzialisation of NewMockhandler.
+func NewMockhandler(targetURL string, dirpath string, wsh ws.WSMockInfo) Mockhandler {
 	return Mockhandler{TargetURL: targetURL, DataDirPath: dirpath, Fs: filesys.LocalFileSystem{}, Client: client{}, WSMockInfoHandler: wsh}
 }
 
@@ -88,7 +87,7 @@ func (h *Mockhandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.SendMockResponse(m, w, r)
 }
 
-//BuildTargetRequestURL replaces this mock service with real target server request url.
+// BuildTargetRequestURL replaces this mock service with real target server request url.
 func (h *Mockhandler) BuildTargetRequestURL(r *http.Request) string {
 	//A browser can issue a relative HTTP request, ex: GET / HTTP/1.1
 	//When we on the server access it I like toallways include the url containing real adress ex:
@@ -127,7 +126,7 @@ func (h *Mockhandler) requestInfo(w http.ResponseWriter, r *http.Request) (*mode
 	defer reader.Close()
 
 	defer response.Body.Close()
-	contents, err := ioutil.ReadAll(reader)
+	contents, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +148,7 @@ func copyHeader(source http.Header, dest *http.Header) {
 	}
 }
 
-//SendMockResponse sending a response based on a mock.
+// SendMockResponse sending a response based on a mock.
 func (h *Mockhandler) SendMockResponse(m *model.MockConf, w http.ResponseWriter, r *http.Request) {
 	filename := h.DataDirPath + "/" + model.GetMockFileName(r) + filesys.ContentEXT
 	dr, err := h.Fs.ReadResource(filename) //ioutil.ReadFile(filename)
@@ -158,7 +157,7 @@ func (h *Mockhandler) SendMockResponse(m *model.MockConf, w http.ResponseWriter,
 		http.Error(w, "Resource unavailable: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	d, err := ioutil.ReadAll(dr)
+	d, err := io.ReadAll(dr)
 	if err != nil {
 		log.Printf("%s \n", err)
 		http.Error(w, "Resource unavailable: "+r.URL.String()+" Failed with error: "+err.Error(), http.StatusServiceUnavailable)

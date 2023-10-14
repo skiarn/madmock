@@ -30,7 +30,7 @@ type Pagehandler struct {
 	Fs          filesys.FileSystem
 }
 
-//NewPageHandler handles initzialisation of PageHandler.
+// NewPageHandler handles initzialisation of PageHandler.
 func NewPageHandler(path string, targeturl string) Pagehandler {
 	return Pagehandler{DataDirPath: path, TargetURL: targeturl, Fs: filesys.LocalFileSystem{}}
 }
@@ -91,7 +91,7 @@ const css = "<style>" + `
 											cursor: pointer;
 										}` + "</style>"
 
-//statusCodeHTMLSelect returns html selector for http status code.
+// statusCodeHTMLSelect returns html selector for http status code.
 func statusCodeHTMLSelect() string {
 	var statuscodehtml = `<select id="statuscodeS" name="StatusCode">`
 	for _, c := range model.ValidStatusCodes {
@@ -124,7 +124,7 @@ func (h *Pagehandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.servePage(w, r)
 }
 
-//EditHandler handles resource page to edit item.
+// EditHandler handles resource page to edit item.
 func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Path[len("/mock/edit/"):]
 	editform := "<div class=\"container\"> <h4>Editing</h4>" + "<h5>Headers</h5><p id=\"headersP\"></p> <br>" + saveformHTML() + "</div>"
@@ -175,7 +175,7 @@ func (h *Pagehandler) EditHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//New serves a page for creating a new mock entity.
+// New serves a page for creating a new mock entity.
 func (h *Pagehandler) New(w http.ResponseWriter, r *http.Request) {
 	postform := "<div class=\"container\"> <h4>New</h4>" + saveformHTML() + "</div>"
 	content := fmt.Sprintf(`<h1>%s</h1><h4>%s</h4><div>%s</div>`, title, h.TargetURL, postform)

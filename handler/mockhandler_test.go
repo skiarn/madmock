@@ -14,11 +14,13 @@ import (
 
 	"github.com/skiarn/madmock/handler"
 	"github.com/skiarn/madmock/model"
+	"github.com/skiarn/madmock/ws"
+	"golang.org/x/net/websocket"
 )
 
 const testDataDirPath = "/path/mad-mock-store"
 
-//Fake File system to read dummy mockconf from.
+// Fake File system to read dummy mockconf from.
 type DummyFileSystem struct{}
 
 func (DummyFileSystem) ReadMockConf(filepath string) (*model.MockConf, error) {
@@ -71,11 +73,32 @@ func (DummyClient) RequestTargetInfo(URL string, w http.ResponseWriter, r *http.
 	return resp, err
 }
 
+// WSMockInfoHandler Mocked for UnitTest
+type WSMockInfoTestHandler struct{}
+
+func (WSMockInfoTestHandler) Send(msg *ws.Message) {
+	fmt.Println("Send message to client")
+}
+func (WSMockInfoTestHandler) WSMockInfoServer(ws *websocket.Conn) {
+	fmt.Println("WSMockInfoServer")
+}
+func (WSMockInfoTestHandler) Run() {
+	fmt.Println("Run")
+}
+
+// go test -timeout 3s -run ^TestServeHTTP_ValidGETRequest$ github.com/skiarn/madmock/handler
 func TestServeHTTP_ValidGETRequest(t *testing.T) {
-	handler := handler.Mockhandler{TargetURL: "github.com", DataDirPath: testDataDirPath, Fs: DummyFileSystem{}, Client: DummyClient{}}
-	test := GenerateHandleTester(t, &handler)
-	//w := test("GET", url.Values{})
-	w := test("GET", nil)
+
+	handler := handler.Mockhandler{TargetURL: "github.com", DataDirPath: testDataDirPath, Fs: DummyFileSystem{}, Client: DummyClient{}, WSMockInfoHandler: WSMockInfoTestHandler{}}
+
+	req, err := http.NewRequest("GET", "http://myservice.com", nil)
+	if err != nil {
+		t.Errorf("%v", err)
+	}
+
+	w := httptest.NewRecorder()
+	fmt.Print("server")
+	handler.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("Mock didn't return %v, response value: %v", http.StatusOK, w)
 	}
@@ -89,7 +112,7 @@ func TestServeHTTP_ValidGETRequest(t *testing.T) {
 
 func TestBuildTargetRequestURL_NormalURL(t *testing.T) {
 	expectedURL := "http://google.se/path"
-	mockhandler := handler.NewMockhandler("google.se", "/dir/test")
+	mockhandler := handler.NewMockhandler("google.se", "/dir/test", WSMockInfoTestHandler{})
 	req, err := http.NewRequest("GET", "http://myservice.com/path", strings.NewReader(string("body")))
 	if err != nil {
 		t.Errorf("%v", err)
@@ -104,7 +127,7 @@ func TestBuildTargetRequestURL_NormalURL(t *testing.T) {
 
 func TestBuildTargetRequestURL_URLWithQuery(t *testing.T) {
 	expectedURL := "http://google.se/example/query?value=abc&value2=cba"
-	mockhandler := handler.NewMockhandler("google.se", "/dir/test")
+	mockhandler := handler.NewMockhandler("google.se", "/dir/test", WSMockInfoTestHandler{})
 	req, err := http.NewRequest("GET", "http://myservice.com/example/query?value=abc&value2=cba", strings.NewReader(string("body")))
 	if err != nil {
 		t.Errorf("%v", err)
@@ -119,7 +142,7 @@ func TestBuildTargetRequestURL_URLWithQuery(t *testing.T) {
 
 func TestBuildTargetRequestURL_URLWithPortSpecified(t *testing.T) {
 	expectedURL := "http://localhost:8080/path"
-	mockhandler := handler.NewMockhandler("localhost:8080", "/dir/test")
+	mockhandler := handler.NewMockhandler("localhost:8080", "/dir/test", WSMockInfoTestHandler{})
 	req, err := http.NewRequest("GET", "http://myservice.com/path", strings.NewReader(string("body")))
 	if err != nil {
 		t.Errorf("%v", err)

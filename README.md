@@ -6,6 +6,11 @@ It works like this, request to other systems passes through this tool and this t
 
 Its possible to modify and create fake responses using a web gui or modify raw files on disk.
 
+Visit http://localhost:<port>/mock to view a web interface to view and modify payloads. 
+The browser wil try open mock monitor view automatically.
+
+Build: `go run main.go`
+
 **Try it out using dockerhub!**
 `docker run -p 8080:10 -it --rm skiarn/madmock -u=apple.com -p=10`
 

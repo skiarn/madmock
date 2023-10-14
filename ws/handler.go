@@ -6,6 +6,12 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+type WSMockInfo interface {
+	WSMockInfoServer(ws *websocket.Conn)
+	Send(msg *Message)
+	Run()
+}
+
 // Handler handles client communication.
 type Handler struct {
 	// clients holds all current clients.
