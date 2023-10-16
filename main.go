@@ -15,12 +15,20 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/skiarn/madmock/handler"
 	"github.com/skiarn/madmock/setting"
@@ -67,7 +75,24 @@ func main() {
 	mux.HandleFunc("/mock/new/", pagehandler.New)
 	mux.Handle("/", &mockhandler)
 	logger.Printf("Server to listen on a port: %v \n", settings.Port)
-	openBrowser("http://localhost:" + strconv.Itoa(settings.Port) + "/mock")
+	protocol := "http"
+	if settings.TLS {
+		protocol = "https"
+	}
+	openBrowser(protocol + "://localhost:" + strconv.Itoa(settings.Port) + "/mock")
+
+	if settings.TLS {
+		err := generateSelfSignedCertificate()
+		if err != nil {
+			log.Fatal("Error generating self-signed certificate:", err)
+			os.Exit(1)
+		}
+		err = http.ListenAndServeTLS(":"+strconv.Itoa(settings.Port), "server.crt", "server.key", mux)
+		if err != nil {
+			log.Fatal("Error starting HTTPS server:", err)
+		}
+		return
+	}
 	logger.Fatal(http.ListenAndServe(":"+strconv.Itoa(settings.Port), mux))
 }
 
@@ -86,4 +111,62 @@ func openBrowser(url string) error {
 	}
 
 	return err
+}
+
+func generateSelfSignedCertificate() error {
+	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		return err
+	}
+
+	notBefore := time.Now()
+	notAfter := notBefore.Add(365 * 24 * time.Hour)
+
+	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
+	if err != nil {
+		return err
+	}
+
+	certTemplate := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			Organization: []string{"Self-Signed Certificate"},
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &certTemplate, &certTemplate, &priv.PublicKey, priv)
+	if err != nil {
+		return err
+	}
+
+	certFile, err := os.Create("server.crt")
+	if err != nil {
+		return err
+	}
+	defer certFile.Close()
+	err = pem.Encode(certFile, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	if err != nil {
+		return err
+	}
+
+	keyFile, err := os.Create("server.key")
+	if err != nil {
+		return err
+	}
+	defer keyFile.Close()
+	keyBytes, err := x509.MarshalECPrivateKey(priv)
+	if err != nil {
+		return err
+	}
+	err = pem.Encode(keyFile, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

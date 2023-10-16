@@ -20,11 +20,12 @@ import (
 	"strings"
 )
 
-//Settings is application settings used to specify mock target and local file directories.
+// Settings is application settings used to specify mock target and local file directories.
 type Settings struct {
 	Port        int
 	TargetURL   string
 	DataDirPath string
+	TLS         bool
 }
 
 //type SettingGetter interface {
@@ -39,11 +40,13 @@ type DirGetter interface {
 	Getwd() (dir string, err error)
 }
 
-//Create settings by using flags.
+// Create settings by using flags.
 func Create() (Settings, error) {
 	var port = flag.Int("p", 9988, "What port the mock should run on.")
 	var url = flag.String("u", "github.com", "Base url to system to be mocked (request will be fetched once and stored locally).")
 	var dir = flag.String("d", "mad-mock-store", "Directory path to mock data and config files.")
+	var useTLS = flag.Bool("tls", false, "Enable HTTPS with a self-signed certificate")
+
 	flag.Parse() // parse the flags
 
 	s := Settings{}
@@ -61,6 +64,10 @@ func Create() (Settings, error) {
 		s.DataDirPath = *dir + "/" + strings.Replace(*url, ":", "", -1)
 	} else {
 		s.DataDirPath = path + "/" + *dir + "/" + strings.Replace(*url, ":", "", -1)
+	}
+
+	if useTLS != nil {
+		s.TLS = *useTLS
 	}
 	return s, nil
 }

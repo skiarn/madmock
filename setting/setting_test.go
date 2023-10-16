@@ -29,7 +29,7 @@ func TestInitSetting_WhenUrlHasPortNumber(t *testing.T) {
 
 	os.Args = []string{"cmd", "-u=google.com:9090"}
 	expectedURL := "google.com:9090"
-	expectedParnetDirName := "google.com9090"
+	expectedParnetDirName := "setting/mad-mock-store/google.com9090"
 
 	settings, err := setting.Create()
 	if err != nil {

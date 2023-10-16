@@ -97,8 +97,11 @@ func (h *Mockhandler) BuildTargetRequestURL(r *http.Request) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	u.Host = h.TargetURL
-	if u.Scheme == "" {
+	if r.TLS != nil {
+		u.Scheme = "https"
+	} else {
 		u.Scheme = "http"
 	}
 

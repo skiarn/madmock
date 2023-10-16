@@ -97,7 +97,6 @@ func TestServeHTTP_ValidGETRequest(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	fmt.Print("server")
 	handler.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("Mock didn't return %v, response value: %v", http.StatusOK, w)
